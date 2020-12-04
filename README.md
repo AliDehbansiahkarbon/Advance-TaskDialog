@@ -5,3 +5,9 @@ TTaskDialog  is a non-visual component, which shows full-featured dialog at run-
 This library has to benefits :
   1- It will get theme automatically.
   2- It has supported a textbox to get user's input which is not implemented by the original one.
+
+
+
+Dependencies:
+You need to have the Konopka Signature VCL Controls (formerly Raize Components).
+The Konopka Components can be downloaded and installed via GetIt, although it is possible that they are only included in the latest version but probably not in the Starter Edition, The free Bonus Pack is only available to licensed owners of the following products: RAD Studio, Delphi or C++Builder 10.1 Berlin( or higher) Professional, Enterprise and Architect editions.
