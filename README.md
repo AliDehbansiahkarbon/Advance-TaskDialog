@@ -8,6 +8,6 @@ This library has to benefits :
 
 
 
-Dependencies:
+Dependencies:<br>
 You need to have the Konopka Signature VCL Controls (formerly Raize Components).
 The Konopka Components can be downloaded and installed via GetIt, although it is possible that they are only included in the latest version but probably not in the Starter Edition, The free Bonus Pack is only available to licensed owners of the following products: RAD Studio, Delphi or C++Builder 10.1 Berlin( or higher) Professional, Enterprise and Architect editions.
