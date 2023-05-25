@@ -1,4 +1,4 @@
-unit AxTaskDialog;
+﻿unit AxTaskDialog;
 {$R 'AxTaskDialogResource.RES'}
 interface
 
@@ -25,15 +25,14 @@ type
     procedure PanelMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure PanelMouseEnter(Sender: TObject);
     procedure PanelMouseLeave(Sender: TObject);
-
   private
-    procedure DrawFrameOnPanel(aPanel: TExposedPanel; aColor: TColor; aStyle: TBrushStyle);
-    procedure ClearFrameOnPanel(aPanel: TExposedPanel);
-    procedure SetBitmap(aBmp: TBitmap);
+    procedure DrawFrameOnPanel(APanel: TExposedPanel; AColor: TColor; AStyle: TBrushStyle);
+    procedure ClearFrameOnPanel(APanel: TExposedPanel);
+    procedure SetBitmap(ABitmap: TBitmap);
   public
     CanCloseForm: Boolean;
     ExtraButtonClick: procedure (Sender: TObject) of object;
-    constructor Create(aOwner: TComponent; aTitleCaption: string; aDetailCaption: string; aHint: string);
+    constructor Create(AOwner: TComponent; ATitleCaption: string; ADetailCaption: string; AHint: string);
     procedure LabelOnClick(Sender: TObject);
   end;
 
@@ -49,21 +48,41 @@ type
   TCommonButtons = set of TCommonButton;
   TAxTaskDialogIcon = (tiBlank, tiWarning, tiQuestion, tiError, tiInformation, tiNotUsed, tiShield);
   TAxTaskDialogFooterIcon = (tfiBlank, tfiWarning, tfiQuestion, tfiError, tfiInformation, tfiShield);
+
   TAxTaskDialogFlag = (
-    tdfEnableHyperLinks, tdfUseCommandLinks, tdfUseCommandLinksNoIcon,
-    tdfExpandFooterArea, tdfExpandByDefault, tdfShowProgressBar,
-    tdfShowMarqueeProgressBar, tdfCallbackTimer, tdfPositionRelativeToWindow,
-    tdfRtlLayout, tdfNoDefaultRadioButton, tdfCanBeMinimized, tdfUserInputeTextBox,
-    tdfExpandButton, tdfEmailButton, tdfRemoveMainIcon, tdfDoNotUseDefaultTitle, tdfRemoveCommonButtons);
+    tdfEnableHyperLinks,
+    tdfUseCommandLinks,
+    tdfUseCommandLinksNoIcon,
+    tdfExpandFooterArea,
+    tdfExpandByDefault,
+    tdfShowProgressBar,
+    tdfShowMarqueeProgressBar,
+    tdfPositionRelativeToWindow,
+    tdfComboEditable,
+    tdfRtlLayout,
+    tdfNoDefaultRadioButton,
+    tdfCanBeMinimized,
+    tdfUserInputeTextBox,
+    tdfExpandButton,
+    tdfEmailButton,
+    tdfRemoveMainIcon,
+    tdfDoNotUseDefaultTitle,
+    tdfRemoveCommonButtons);
+
   TAxTaskDialogFlags = set of TAxTaskDialogFlag;
 
   TAxTaskDialog = object
     procedure BtnExpandClick(Sender: TObject);
+  private
+    FDialogForm: TTaskDialogForm;
+    FTopPanel, FMiddlePanel: TRzPanel;
+    FFlags: TAxTaskDialogFlags;
+    FTempHint: string;
   public
     DialogCaption: string;
     Title: string;
     MainText: string;
-    RadioButtonsText: string;
+    RadioButtonsItems: string;
     ExpandableText: string;
     ExpandedButtonTooltip: string;
     CollapsedButtonTooltip: string;
@@ -75,17 +94,14 @@ type
     ComboBoxSelectionResultIndex: Integer;
     VerifyChecked: BOOL;
     BottomPanel: TRzPanel;
-    CommandLinkButtons: array of TCommandLinkButton;
-    class function UnAmp(const aTempStr: string): string;
-    function CR(const aText: string): string;
-    function NoCR(const aText: string; var aHint: string): string;
-    function GetFooterIconName(aFooterIcon: TAxTaskDialogFooterIcon): string;
-    function Execute(aCommonButtons: TCommonButtons = []; aDefaultButton: Integer = 0; aFlags: TAxTaskDialogFlags = []; aDialogIcon: TAxTaskDialogIcon = tiInformation; aFooterIcon: TAxTaskDialogFooterIcon = tfiWarning; aDefaultRadio: Integer = 0; aWidth: Integer = 0): Integer;
-  private
-      FDialogForm: TTaskDialogForm;
-      FTopPanel, FMiddlePanel: TRzPanel;
-      FFlags: TAxTaskDialogFlags;
-      FTempHint: string;
+    CommandLinkButtons: TArray<TCommandLinkButton>;
+    class function UnAmp(const ATempStr: string): string;
+    function CR(const AText: string): string;
+    function NoCR(const AText: string; var AHint: string): string;
+    function GetFooterIconName(AFooterIcon: TAxTaskDialogFooterIcon): string;
+    function Execute(ACommonButtons: TCommonButtons = []; ADefaultButton: Integer = 0; AFlags: TAxTaskDialogFlags = [];
+                     ADialogIcon: TAxTaskDialogIcon = tiInformation; AFooterIcon: TAxTaskDialogFooterIcon = tfiWarning;
+                     ADefaultRadio: Integer = 0; AWidth: Integer = 0): Integer;
   end;
 
   TExtraBitButton = class(TRzBitBtn)
@@ -99,7 +115,7 @@ type
     FUrl: string;
     procedure UrlOnClick(Sender: TObject);
   public
-    constructor Create(aLabel: TRzLabel; const aURL: string); reintroduce;
+    constructor Create(ALabel: TRzLabel; const AURL: string); reintroduce;
   end;
 
 implementation
@@ -135,7 +151,7 @@ const
   WIN_FOOTERICONS: array[TAxTaskDialogFooterIcon] of PChar = (nil, IDI_WARNING, IDI_QUESTION, IDI_ERROR, IDI_INFORMATION, IDI_WINLOGO);
 
 { TTaskDialog }
-procedure ActiveWindowScreenShot(aCapture: TBitMap);
+procedure ActiveWindowScreenShot(ACapture: TBitMap);
 var
   LvCanvas: TCanvas;
   LvTempRect, LvWindowRect: TRect;
@@ -148,16 +164,16 @@ begin
     GetWindowRect(LvWindowHandle, LvWindowRect);
   try
     LvTempRect := Rect(0, 0, LvWindowRect.Right - LvWindowRect.Left, LvWindowRect.Bottom - LvWindowRect.Top);
-    aCapture.Width  := LvWindowRect.Right - LvWindowRect.Left;
-    aCapture.Height := LvWindowRect.Bottom - LvWindowRect.Top;
-    aCapture.Canvas.CopyRect(LvTempRect, LvCanvas, LvWindowRect);
+    ACapture.Width  := LvWindowRect.Right - LvWindowRect.Left;
+    ACapture.Height := LvWindowRect.Bottom - LvWindowRect.Top;
+    ACapture.Canvas.CopyRect(LvTempRect, LvCanvas, LvWindowRect);
   finally
     ReleaseDC(0, LvCanvas.Handle);
     LvCanvas.Free;
   end;
 end;
 
-function ScreenShot(aCapture: TBitMap): string;
+function ScreenShot(ACapture: TBitMap): string;
 var
   LvCanvas: TCanvas;
   LvRect: TRect;
@@ -166,11 +182,11 @@ begin
   LvCanvas.Handle := GetWindowDC(GetDesktopWindow);
   try
     LvRect := Rect(0, 0, Screen.Width, Screen.Height);
-    aCapture.Width := Screen.Width;
-    aCapture.Height := Screen.Height;
-    aCapture.Canvas.CopyRect(LvRect, LvCanvas, LvRect);
+    ACapture.Width := Screen.Width;
+    ACapture.Height := Screen.Height;
+    ACapture.Canvas.CopyRect(LvRect, LvCanvas, LvRect);
     Result := IncludeTrailingBackslash(TPath.GetTempPath) + 'RMPro'+ FormatDateTime('mmddyyyyhhnnss', Now) + '.bmp';
-    aCapture.SaveToFile(Result);
+    ACapture.SaveToFile(Result);
   finally
     ReleaseDC(0, LvCanvas.Handle);
     LvCanvas.Free;
@@ -194,14 +210,14 @@ begin
         try
           SetLength(LvRecipients, 1);
           SetLength(LvAttachmentArray, 1);
-          LvRecipients[0] := 'support@rminno.com';
+          LvRecipients[0] := 'support@x.com';
           LvScreenCapture := TBitmap.Create;
           LvDialogCapture := TBitmap.Create;
           ActiveWindowScreenShot(LvDialogCapture);
           LvAttachmentArray[0] := ScreenShot(LvScreenCapture);
           if not FileExists(LvAttachmentArray[0]) then
             LvAttachmentArray[0] := '';
-          //OpenRepEmail(LvRecipients, [], [], '', LvAttachmentArray, '', False, True, True, GetSMTPParams());
+          //send email;
           TExposedPanel(Sender).ClearFrameOnPanel(TExposedPanel(Sender));
         finally
           LvScreenCapture.Free;
@@ -212,6 +228,7 @@ begin
         begin
           if Assigned(ExtraButtonClick) then
             ExtraButtonClick(TExposedPanel(Sender));
+
           Self.Tag := Tag; // Self means TTaskDialogForm here.
           if CanCloseForm then
             Close;
@@ -289,15 +306,15 @@ begin
   end;
 end;
 
-function TAxTaskDialog.CR(const aText: string): string;
+function TAxTaskDialog.CR(const AText: string): string;
 begin
-  if pos('\n', aText)=0 then
-    Result := aText
+  if pos('\n', AText) = 0 then
+    Result := AText
   else
-    Result := StringReplace(aText, '\n', #10, [rfReplaceAll]);
+    Result := StringReplace(AText, '\n', #10, [rfReplaceAll]);
 end;
 
-function TAxTaskDialog.Execute(aCommonButtons: TCommonButtons; aDefaultButton: Integer; aFlags: TAxTaskDialogFlags; aDialogIcon: TAxTaskDialogIcon; aFooterIcon: TAxTaskDialogFooterIcon; aDefaultRadio, aWidth: Integer): Integer;
+function TAxTaskDialog.Execute(ACommonButtons: TCommonButtons; ADefaultButton: Integer; AFlags: TAxTaskDialogFlags; ADialogIcon: TAxTaskDialogIcon; AFooterIcon: TAxTaskDialogFooterIcon; ADefaultRadio, AWidth: Integer): Integer;
 var
   I, XB, LvLastLeftPosition, LvLastTopPosition, LvFontHeight, LvSurfaceOptimizer, LvMiddlePanelHeight, LvTopPanelHeight, LvBottomPanelHeight: Integer;
   LvTempImage: TImage;
@@ -309,114 +326,99 @@ var
   LvVerifierCheckBox: TRzCheckBox;
   LvExpandButton: TSpeedButton;
   LvProgressBar: TProgressBar;
-function AddFooterExpandedText(const aText: string; aBigFont: Boolean; aParent: TWinControl): TMemo;
-begin
-  Result := TMemo.Create(aParent);
-  Result.Parent := aParent;
-  Result.WordWrap := True;
-  if aBigFont then
+  function AddFooterExpandedText(const aText: string; aBigFont: Boolean; aParent: TWinControl): TMemo;
   begin
-    Result.Font.Height := LvFontHeight - 4;
-    Result.Font.Color := $B00000;
-  end
-  else
-    Result.Font.Height:= LvFontHeight;
-  Result.Left := LvLastLeftPosition;
-  Result.Top := 5;
-  Result.Width := aWidth - LvLastLeftPosition - 25;
-  Result.Lines.Text := CR(aText);
-  Result.ScrollBars := ssVertical;
-  Result.ReadOnly := True;
-  Result.BringToFront;
-  Inc(LvLastTopPosition, Result.Height + 16);
-  BottomPanel.Height := BottomPanel.Height + Result.Height;// + 16;
-  aParent.Height := Result.Height + 5;
-  Result.AlignWithMargins := True;
-  Result.Margins.Left := 0;
-  Result.Top := 2;
-  Result.Margins.Right := 0;
-  Result.Margins.Bottom := 2;
-end;
-function AddFooter(const aText: string): TRzLabel;
-var
-  LvUrlText, LvLeftText, LvRightText, LvTempText: string;
-  LvStartPos, LvEndPos: Integer;
-  LvLeftLabel, LvUrlLabel, LvRightLabel: TRzLabel;
-  LvUrlHandler: TUrlLabelHandler;
-  LvMustAddHeight: Boolean;
-  LvTop: Integer;
-  LvAlignedBottomPanel, LvAlignedExpandPanel: TRzPanel;
-  LvTempIcon: TIcon;
-  LvTempBmp: TBitmap;
-begin
-  LvMustAddHeight := False;
-  LvLeftText := '';
-  LvUrlText := '';
-  LvRightText := '';
-  LvTop := 5;
-  BottomPanel.Margins.Top := 5;
-{$REGION ' Add AddFooterExpandedText'}
-  if (ExpandableText.Trim <> '') and (tdfExpandFooterArea in aFlags) then
-  begin
-    LvAlignedExpandPanel := TRzPanel.Create(FDialogForm);
-    LvAlignedExpandPanel.Parent := BottomPanel;
-    LvAlignedExpandPanel.Transparent := True;
-    LvAlignedExpandPanel.BorderInner := fsNone;
-    LvAlignedExpandPanel.BorderOuter := fsNone;
-    LvAlignedExpandPanel.ParentBackground := False;
-    LvAlignedExpandPanel.Align := alTop;
-    LvAlignedExpandPanel.Margins.Top := 5;
-    LvAlignedExpandPanel.Name := 'AlignedExpandPanel';
-    AddFooterExpandedText(ExpandableText, False, LvAlignedExpandPanel);
-  end;
-{$ENDREGION}
-  if (aText.IsEmpty) then
-    Exit;
-{$REGION ' Add AlignedBottomPanel as the FooterText holder'}
-  LvAlignedBottomPanel := TRzPanel.Create(BottomPanel);
-  LvAlignedBottomPanel.Parent := BottomPanel;
-  LvAlignedBottomPanel.Align := alBottom;
-  LvAlignedBottomPanel.Transparent := True;
-  LvAlignedBottomPanel.BorderInner := fsNone;
-  LvAlignedBottomPanel.BorderOuter := fsNone;
-  LvAlignedBottomPanel.ParentBackground := False;
-  LvAlignedBottomPanel.Margins.Top := 5;
-  LvAlignedBottomPanel.Name := 'AlignedBottomPanel';
-  LvAlignedBottomPanel.Height := 35;
-{$ENDREGION}
-{$REGION ' Add footer icon'}
-  if WIN_FOOTERICONS[aFooterIcon] <> nil then
-  begin
-    LvTempImage := TImage.Create(LvAlignedBottomPanel);
-    LvTempImage.Parent := LvAlignedBottomPanel;
-    LvTempImage.Picture.Bitmap.LoadFromResourceName(hInstance, PWideChar(GetFooterIconName(aFooterIcon)));
-    LvTempImage.SetBounds(24, 5, LvTempImage.Picture.Bitmap.Width, LvTempImage.Picture.Bitmap.Height);
-    LvTempImage.AutoSize:= False;
-    LvTempImage.Stretch := True;
-    LvTempImage.Transparent:= True;
-  end
-  else
-    LvLastLeftPosition := 24;
-{$ENDREGION}
-{$REGION ' Add footer Text'}
-  if not (tdfEnableHyperLinks in FFlags) then
-  begin
-    Result := TRzLabel.Create(LvAlignedBottomPanel);
-    Result.Parent := LvAlignedBottomPanel;
+    Result := TMemo.Create(aParent);
+    Result.Parent := aParent;
     Result.WordWrap := True;
-    Result.Font.Height:= LvFontHeight;
+    if aBigFont then
+    begin
+      Result.Font.Height := LvFontHeight - 4;
+      Result.Font.Color := $B00000;
+    end
+    else
+      Result.Font.Height:= LvFontHeight;
+
     Result.Left := LvLastLeftPosition;
-    Result.Top := LvTop;
-    Result.Width := aWidth - LvLastLeftPosition - 8;
-    Result.Caption := CR(aText);
-    Result.Transparent := True;
-    LvMustAddHeight := True;
+    Result.Top := 5;
+    Result.Width := AWidth - LvLastLeftPosition - 25;
+    Result.Lines.Text := CR(aText);
+    Result.ScrollBars := ssVertical;
+    Result.ReadOnly := True;
+    Result.BringToFront;
     Inc(LvLastTopPosition, Result.Height + 16);
-    Result.Parent.Height := Result.Height + 1;
-  end
-  else
+    BottomPanel.Height := BottomPanel.Height + Result.Height;// + 16;
+    aParent.Height := Result.Height + 5;
+    Result.AlignWithMargins := True;
+    Result.Margins.Left := 0;
+    Result.Top := 2;
+    Result.Margins.Right := 0;
+    Result.Margins.Bottom := 2;
+  end;
+  function AddFooter(const aText: string): TRzLabel;
+  var
+    LvUrlText, LvLeftText, LvRightText, LvTempText: string;
+    LvStartPos, LvEndPos: Integer;
+    LvLeftLabel, LvUrlLabel, LvRightLabel: TRzLabel;
+    LvUrlHandler: TUrlLabelHandler;
+    LvMustAddHeight: Boolean;
+    LvTop: Integer;
+    LvAlignedBottomPanel, LvAlignedExpandPanel: TRzPanel;
+    LvTempIcon: TIcon;
+    LvTempBmp: TBitmap;
+    LvTempStr: string;
   begin
-    if pos('<a', aText) = 0 then
+    LvMustAddHeight := False;
+    LvLeftText := '';
+    LvUrlText := '';
+    LvRightText := '';
+    LvTop := 5;
+    BottomPanel.Margins.Top := 5;
+  {$REGION ' Add AddFooterExpandedText'}
+    if (ExpandableText.Trim <> '') and (tdfExpandFooterArea in AFlags) then
+    begin
+      LvAlignedExpandPanel := TRzPanel.Create(FDialogForm);
+      LvAlignedExpandPanel.Parent := BottomPanel;
+      LvAlignedExpandPanel.Transparent := True;
+      LvAlignedExpandPanel.BorderInner := fsNone;
+      LvAlignedExpandPanel.BorderOuter := fsNone;
+      LvAlignedExpandPanel.ParentBackground := False;
+      LvAlignedExpandPanel.Align := alTop;
+      LvAlignedExpandPanel.Margins.Top := 5;
+      LvAlignedExpandPanel.Name := 'AlignedExpandPanel';
+      AddFooterExpandedText(ExpandableText, False, LvAlignedExpandPanel);
+    end;
+  {$ENDREGION}
+    if (aText.IsEmpty) then
+      Exit;
+  {$REGION ' Add AlignedBottomPanel as the FooterText holder'}
+    LvAlignedBottomPanel := TRzPanel.Create(BottomPanel);
+    LvAlignedBottomPanel.Parent := BottomPanel;
+    LvAlignedBottomPanel.Align := alClient;
+    LvAlignedBottomPanel.Transparent := True;
+    LvAlignedBottomPanel.BorderInner := fsNone;
+    LvAlignedBottomPanel.BorderOuter := fsNone;
+    LvAlignedBottomPanel.ParentBackground := False;
+    LvAlignedBottomPanel.Margins.Top := 5;
+    LvAlignedBottomPanel.Name := 'AlignedBottomPanel';
+    LvAlignedBottomPanel.Height := 35;
+  {$ENDREGION}
+  {$REGION ' Add footer icon'}
+    if WIN_FOOTERICONS[AFooterIcon] <> nil then
+    begin
+      LvTempImage := TImage.Create(LvAlignedBottomPanel);
+      LvTempImage.Parent := LvAlignedBottomPanel;
+      LvTempImage.Picture.Bitmap.LoadFromResourceName(hInstance, PWideChar(GetFooterIconName(AFooterIcon)));
+      LvTempImage.SetBounds(24, 5, LvTempImage.Picture.Bitmap.Width, LvTempImage.Picture.Bitmap.Height);
+      LvTempImage.AutoSize:= False;
+      LvTempImage.Stretch := True;
+      LvTempImage.Transparent:= True;
+    end
+    else
+      LvLastLeftPosition := 24;
+  {$ENDREGION}
+  {$REGION ' Add footer Text'}
+    if not (tdfEnableHyperLinks in FFlags) then
     begin
       Result := TRzLabel.Create(LvAlignedBottomPanel);
       Result.Parent := LvAlignedBottomPanel;
@@ -424,7 +426,7 @@ begin
       Result.Font.Height:= LvFontHeight;
       Result.Left := LvLastLeftPosition;
       Result.Top := LvTop;
-      Result.Width := aWidth - LvLastLeftPosition - 8;
+      Result.Width := AWidth - LvLastLeftPosition - 8;
       Result.Caption := CR(aText);
       Result.Transparent := True;
       LvMustAddHeight := True;
@@ -433,145 +435,225 @@ begin
     end
     else
     begin
-      LvTempText := LowerCase(aText);
-      LvStartPos := pos('"', LvTempText) + 1;
-      LvEndPos := pos('">', LvTempText);
-      LvLeftText := CR(Copy(LvTempText, 0 , pos('<a', LvTempText) -1 ));
-      LvUrlText := CR(copy(LvTempText, LvStartPos, LvEndPos - LvStartPos ));
-      LvRightText := CR(Copy(LvTempText, LvEndPos + 2, Pos('</a>', LvTempText) - LvEndPos - 4));
-
-      if LvLeftText.Trim <> '' then
+      if pos('<a', aText) = 0 then
       begin
-        LvLeftLabel := TRzLabel.Create(LvAlignedBottomPanel);
-        LvLeftLabel.Parent := LvAlignedBottomPanel;
-        LvLeftLabel.WordWrap := False;
-        LvLeftLabel.Font.Height:= LvFontHeight;
-        LvLeftLabel.Left := LvLastLeftPosition;
-        LvLeftLabel.Top := LvTop;
-        //LvLeftLabel.Width := aWidth - X - 8;
-        LvLeftLabel.AutoSize:= True;
-        LvLeftLabel.Caption := CR(LvLeftText);
-        LvLeftLabel.Transparent := True;
-        Inc(LvLastLeftPosition, LvLeftLabel.Width);
-        if not LvMustAddHeight then
-        begin
-          Inc(LvLastTopPosition, LvLeftLabel.Height + 16);
-          LvMustAddHeight := True;
-        end;
+        Result := TRzLabel.Create(LvAlignedBottomPanel);
+        Result.Parent := LvAlignedBottomPanel;
+        Result.WordWrap := True;
+        Result.Font.Height:= LvFontHeight;
+        Result.Left := LvLastLeftPosition;
+        Result.Top := LvTop;
+        Result.Width := AWidth - LvLastLeftPosition - 8;
+        Result.Caption := CR(aText);
+        Result.Transparent := True;
+        LvMustAddHeight := True;
+        Inc(LvLastTopPosition, Result.Height + 16);
+        Result.Parent.Height := Result.Height + 1;
+      end
+      else
+      begin
+        LvTempText := LowerCase(aText);
+        LvStartPos := pos('"', LvTempText) + 1;
+        LvEndPos := pos('">', LvTempText);
+        LvLeftText := CR(Copy(LvTempText, 0 , pos('<a', LvTempText) -1));
+        LvUrlText := CR(copy(LvTempText, LvStartPos, LvEndPos - LvStartPos ));
+        LvTempText := StringReplace(LvTempText, '</a>', '', [rfReplaceAll , rfIgnoreCase]);
+        LvRightText := CR(Copy(LvTempText, Pos('">', LvTempText) + 2, Length(LvTempText)));
 
-        if LvUrlText.Trim <> '' then
+
+
+        if tdfRtlLayout in AFlags then
         begin
-          LvUrlLabel := TRzLabel.Create(LvAlignedBottomPanel);
-          LvUrlLabel.Parent := LvAlignedBottomPanel;
-          LvUrlLabel.WordWrap := False;
-          LvUrlLabel.Font.Height:= LvFontHeight;
-          LvUrlLabel.Left := LvLastLeftPosition;
-          LvUrlLabel.Top := LvTop;
-          LvUrlLabel.AutoSize := True;
-          LvUrlLabel.Caption := CR(LvUrlText);
-          LvUrlLabel.Transparent := True;
-          LvUrlHandler := TUrlLabelHandler.Create(LvUrlLabel, LvUrlText);
-          Inc(LvLastLeftPosition, LvUrlLabel.Width);
+          LvTempStr := LvLeftText;
+          LvLeftText := LvRightText;
+          LvRightText := LvTempStr;
+        end;
+        //else
+        begin
+          LvLeftLabel := TRzLabel.Create(LvAlignedBottomPanel);
+          LvLeftLabel.Parent := LvAlignedBottomPanel;
+          LvLeftLabel.WordWrap := False;
+          LvLeftLabel.Font.Height:= LvFontHeight;
+          LvLeftLabel.Left := LvLastLeftPosition;
+          LvLeftLabel.Top := LvTop;
+          //LvLeftLabel.Width := aWidth - X - 8;
+          LvLeftLabel.AutoSize:= True;
+          LvLeftLabel.Caption := CR(LvLeftText.Trim);
+          LvLeftLabel.Transparent := True;
+          Inc(LvLastLeftPosition, LvLeftLabel.Width);
           if not LvMustAddHeight then
           begin
-            Inc(LvLastTopPosition, LvUrlLabel.Height + 16);
+            Inc(LvLastTopPosition, LvLeftLabel.Height + 16);
             LvMustAddHeight := True;
           end;
-        end;
 
-        if LvRightText.Trim <> '' then
-        begin
-          LvRightLabel := TRzLabel.Create(LvAlignedBottomPanel);
-          LvRightLabel.Parent := LvAlignedBottomPanel;
-          LvRightLabel.WordWrap := False;
-          LvRightLabel.Font.Height:= LvFontHeight;
-          LvRightLabel.Left := LvLastLeftPosition;
-          LvRightLabel.Top := LvTop;
-          LvRightLabel.AutoSize := True;
-          LvRightLabel.Caption := CR(LvRightText);
-          LvRightLabel.Transparent := True;
-          Inc(LvLastLeftPosition, LvRightLabel.Width);
+          if LvUrlText.Trim <> '' then
+          begin
+            LvUrlLabel := TRzLabel.Create(LvAlignedBottomPanel);
+            LvUrlLabel.Parent := LvAlignedBottomPanel;
+            LvUrlLabel.WordWrap := False;
+            LvUrlLabel.Font.Height:= LvFontHeight;
+            LvUrlLabel.Left := LvLastLeftPosition + 1;
+            LvUrlLabel.Top := LvTop;
+            LvUrlLabel.AutoSize := True;
+            LvUrlLabel.Caption := CR(LvUrlText.Trim);
+            LvUrlLabel.Transparent := True;
+            LvUrlHandler := TUrlLabelHandler.Create(LvUrlLabel, LvUrlText);
+            Inc(LvLastLeftPosition, LvUrlLabel.Width);
+            if not LvMustAddHeight then
+            begin
+              Inc(LvLastTopPosition, LvUrlLabel.Height + 16);
+              LvMustAddHeight := True;
+            end;
+          end;
+
+          if LvRightText.Trim <> '' then
+          begin
+            LvRightLabel := TRzLabel.Create(LvAlignedBottomPanel);
+            LvRightLabel.Parent := LvAlignedBottomPanel;
+            LvRightLabel.WordWrap := False;
+            LvRightLabel.Font.Height:= LvFontHeight;
+            LvRightLabel.Left := LvLastLeftPosition + 1;
+            LvRightLabel.Top := LvTop;
+            LvRightLabel.AutoSize := True;
+            LvRightLabel.Caption := CR(LvRightText.Trim);
+            LvRightLabel.Transparent := True;
+            Inc(LvLastLeftPosition, LvRightLabel.Width);
+          end;
+
+          if tdfRtlLayout in AFlags then
+          begin
+            LvRightLabel.Align :=  alRight;
+            LvRightLabel.AlignWithMargins := True;
+            LvRightLabel.Margins.Right := 20;
+
+            LvUrlLabel.Align := alRight;
+            LvUrlLabel.AlignWithMargins := True;
+            LvUrlLabel.Margins.Right := 10;
+
+            LvLeftLabel.Align := alRight;
+            LvLeftLabel.AlignWithMargins := True;
+            LvLeftLabel.Margins.Right := 10;
+          end;
         end;
       end;
     end;
+  {$ENDREGION}
   end;
-{$ENDREGION}
-end;
-function AddButton(S: string; Tag: Integer; AParent: TWinControl): TExtraBitButton;
-var
-  LvBtnWith: Integer;
-  LvHint: string;
-begin
-  S := UnAmp(S);
-  LvBtnWith := FDialogForm.Canvas.TextWidth(S) + 60;
-  Dec(XB, LvBtnWith);
-  if XB < (LvLastLeftPosition shr 1) then
+  function AddButton(S: string; Tag: Integer; AParent: TWinControl): TExtraBitButton;
+  var
+    LvBtnWith: Integer;
+    LvHint: string;
   begin
-    XB := aWidth - LvBtnWith;
-    Inc(LvLastTopPosition, 32);
-    LvMiddlePanelHeight := LvMiddlePanelHeight + 28;
-  end;
-  case Tag of
-   1..11 : XB := XB - 15;
-  end;
-
-  Result := TExtraBitButton.Create(FDialogForm);
-  Result.CanCloseForm := True;
-  Result.Parent := AParent;
-  Result.SetBounds(XB, LvLastTopPosition, LvBtnWith, 25);
-  Result.Caption := NoCR(S, LvHint);
-  if not LvHint.IsEmpty then
-  begin
-    Result.Hint := LvHint;
-    Result.ShowHint := True;
-  end;
-  Result.Tag := Tag;
-  Result.OnClick := FDialogForm.ButtonClick;
-  case Tag of
-    mrOk:
+    S := UnAmp(S);
+    LvBtnWith := FDialogForm.Canvas.TextWidth(S) + 60;
+    Dec(XB, LvBtnWith);
+    if XB < (LvLastLeftPosition shr 1) then
     begin
-      Result.Default := true;
-      if aCommonButtons = [cbOk] then
-        Result.Cancel := True;
+      XB := AWidth - LvBtnWith;
+      Inc(LvLastTopPosition, 32);
+      LvMiddlePanelHeight := LvMiddlePanelHeight + 28;
     end;
-    mrCancel: Result.Cancel := True;
-  end;
-  if Tag = aDefaultButton then
-    FDialogForm.Tag := Integer(Result);
-end;
-function AddLabel(const Text: string; BigFont: Boolean; ChangeColor:Boolean; AParent: TWinControl; AName: string): TRzLabel;
-begin
-  Result := TRzLabel.Create(FDialogForm);
-  Result.Parent := AParent;
-  Result.WordWrap := True;
-  if BigFont then
-    Result.Font.Height := LvFontHeight - 6
-  else
-    Result.Font.Height:= LvFontHeight - 2;
+    case Tag of
+     1..11 : XB := XB - 15;
+    end;
 
-  if ChangeColor then
-    Result.Font.Color := $B00000;
-  Result.Left := LvLastLeftPosition;
-  Result.Top := LvLastTopPosition;
-  Result.Width := AWidth - LvLastLeftPosition - 8;
-  Result.Caption := CR(Text);
-  Result.Transparent := True;
-  Inc(LvLastTopPosition, Result.Height + 16);
-  Result.Name := AName;
-end;
-function AddCommandLinkbuttons:TExposedPanel;
-var
-  I: Integer;
-  LvTitleCaption, LvDetailCaption : string;
-  LvHint: string;
-begin
-  if (tdfUseCommandLinks in aFlags) and (Length(CommandLinkButtons) > 0) then
-  begin
-    for I:= Low(CommandLinkButtons) to High(CommandLinkButtons) do
+    Result := TExtraBitButton.Create(FDialogForm);
+    Result.CanCloseForm := True;
+    Result.Parent := AParent;
+    Result.SetBounds(XB, LvLastTopPosition, LvBtnWith, 25);
+    Result.Caption := NoCR(S, LvHint);
+    if not LvHint.IsEmpty then
     begin
-      LvTitleCaption := CommandLinkButtons[I].TitleCaption;
-      LvDetailCaption := CommandLinkButtons[I].DetailCaption;
-      LvHint := CommandLinkButtons[I].Hint;
+      Result.Hint := LvHint;
+      Result.ShowHint := True;
+    end;
+    Result.Tag := Tag;
+    Result.OnClick := FDialogForm.ButtonClick;
+    case Tag of
+      mrOk:
+      begin
+        Result.Default := true;
+        if ACommonButtons = [cbOk] then
+          Result.Cancel := True;
+      end;
+      mrCancel: Result.Cancel := True;
+    end;
+    if Tag = ADefaultButton then
+      FDialogForm.Tag := Integer(Result);
+  end;
+  function AddLabel(const Text: string; BigFont: Boolean; ChangeColor:Boolean; AParent: TWinControl; AName: string): TRzLabel;
+  begin
+    Result := TRzLabel.Create(FDialogForm);
+    Result.Parent := AParent;
+    Result.WordWrap := True;
+    if BigFont then
+      Result.Font.Height := LvFontHeight - 6
+    else
+      Result.Font.Height:= LvFontHeight - 2;
+
+    if ChangeColor then
+      Result.Font.Color := $B00000;
+    Result.Left := LvLastLeftPosition;
+    Result.Top := LvLastTopPosition;
+    Result.Width := AWidth - LvLastLeftPosition - 8;
+    Result.Caption := CR(Text);
+    Result.Transparent := True;
+    Inc(LvLastTopPosition, Result.Height + 16);
+    Result.Name := AName;
+  end;
+  function AddCommandLinkbuttons:TExposedPanel;
+  var
+    I: Integer;
+    LvTitleCaption, LvDetailCaption : string;
+    LvHint: string;
+  begin
+    if (tdfUseCommandLinks in AFlags) and (Length(CommandLinkButtons) > 0) then
+    begin
+      for I:= Low(CommandLinkButtons) to High(CommandLinkButtons) do
+      begin
+        LvTitleCaption := CommandLinkButtons[I].TitleCaption;
+        LvDetailCaption := CommandLinkButtons[I].DetailCaption;
+        LvHint := CommandLinkButtons[I].Hint;
+        with TExposedPanel.Create(FDialogForm, LvTitleCaption, LvDetailCaption, LvHint) do
+        begin
+          Parent := FTopPanel;
+          BorderInner := fsNone;
+          BorderOuter := fsNone;
+          Transparent := True;
+          if TStyleManager.ActiveStyle.Name = 'Windows' then
+            Color := clWhite
+          else
+            Color := TStyleManager.ActiveStyle.GetSystemColor(FDialogForm.Color);
+          if not LvHint.IsEmpty then
+          begin
+            Hint := LvHint;
+            ShowHint := True;
+          end;
+          ParentBackground := False;
+          SetBounds(LvLastLeftPosition, LvLastTopPosition, AWidth - 20 - LvLastLeftPosition, Height);
+          Caption := '';
+          CanCloseForm := CommandLinkButtons[I].CanCloseForm;
+          Inc(LvLastTopPosition, Height + 5);
+          Tag := I + 101;
+          OnClick := FDialogForm.ButtonClick;
+          if not (tdfUseCommandLinksNoIcon in AFlags) then
+            SetBitmap(BitmapArrow);
+          if Assigned(CommandLinkButtons[I].ExtraBtnClick) then
+            ExtraButtonClick := CommandLinkButtons[I].ExtraBtnClick
+          else
+            ExtraButtonClick := nil;
+        end;
+      end;
+      Inc(LvLastTopPosition, 5);
+    end;
+
+    if (tdfEmailButton in AFlags) then
+    begin
+      LvTitleCaption := IfThen((tdfRtlLayout in AFlags), 'ارسال ایمیل', 'Send Mail');
+      LvDetailCaption := IfThen((tdfRtlLayout in AFlags), 'ارسال ایمیل به پشتیبانی', 'Send Mail to support department.');
+      LvHint := '';
+
       with TExposedPanel.Create(FDialogForm, LvTitleCaption, LvDetailCaption, LvHint) do
       begin
         Parent := FTopPanel;
@@ -582,80 +664,45 @@ begin
           Color := clWhite
         else
           Color := TStyleManager.ActiveStyle.GetSystemColor(FDialogForm.Color);
-        if not LvHint.IsEmpty then
-        begin
-          Hint := LvHint;
-          ShowHint := True;
-        end;
         ParentBackground := False;
-        SetBounds(LvLastLeftPosition, LvLastTopPosition, aWidth - 20 - LvLastLeftPosition, Height);
+        SetBounds(LvLastLeftPosition, LvLastTopPosition, AWidth - 20 - LvLastLeftPosition, Height);
         Caption := '';
-        CanCloseForm := CommandLinkButtons[I].CanCloseForm;
-        Inc(LvLastTopPosition, Height + 5);
-        Tag := I + 101;
+        CanCloseForm := False;
+        Inc(LvLastTopPosition, Height + 2);
+        Tag := 100;
         OnClick := FDialogForm.ButtonClick;
-        if not (tdfUseCommandLinksNoIcon in aFlags) then
+        if not (tdfUseCommandLinksNoIcon in AFlags) then
           SetBitmap(BitmapArrow);
-        if Assigned(CommandLinkButtons[I].ExtraBtnClick) then
-          ExtraButtonClick := CommandLinkButtons[I].ExtraBtnClick
-        else
-          ExtraButtonClick := nil;
+        HelpKeyword := 'EmailButton';
       end;
+      Inc(LvLastTopPosition, 7);
     end;
-    Inc(LvLastTopPosition, 5);
   end;
-
-  if (tdfEmailButton in aFlags) then
-  begin
-    LvTitleCaption := 'Send Mail';
-    LvDetailCaption := 'Send Mail to support department.';
-    LvHint := '';
-    with TExposedPanel.Create(FDialogForm, LvTitleCaption, LvDetailCaption, LvHint) do
-    begin
-      Parent := FTopPanel;
-      BorderInner := fsNone;
-      BorderOuter := fsNone;
-      Transparent := True;
-      if TStyleManager.ActiveStyle.Name = 'Windows' then
-        Color := clWhite
-      else
-        Color := TStyleManager.ActiveStyle.GetSystemColor(FDialogForm.Color);
-      ParentBackground := False;
-      SetBounds(LvLastLeftPosition, LvLastTopPosition, aWidth - 20 - LvLastLeftPosition, Height);
-      Caption := '';
-      CanCloseForm := False;
-      Inc(LvLastTopPosition, Height + 2);
-      Tag := 100;
-      OnClick := FDialogForm.ButtonClick;
-      if not (tdfUseCommandLinksNoIcon in aFlags) then
-        SetBitmap(BitmapArrow);
-      HelpKeyword := 'EmailButton';
-    end;
-    Inc(LvLastTopPosition, 7);
-  end;
-end;
 begin
 {$REGION ' Initialize parameters'}
-  if (Byte(aCommonButtons) = 0) and (Length(CommandLinkButtons) = 0) then
+  if (Byte(ACommonButtons) = 0) and (Length(CommandLinkButtons) = 0) then
   begin
-    aCommonButtons := [cbOk];
-    if aDefaultButton = 0 then
-      aDefaultButton := mrOk;
+    ACommonButtons := [cbOk];
+    if ADefaultButton = 0 then
+      ADefaultButton := mrOk;
   end;
+
   if DialogCaption='' then
+  begin
     if Application.MainForm = nil then
       DialogCaption := Application.Title
     else
       DialogCaption := Application.MainForm.Caption;
+  end;
 
-  if (Title = '') and (TD_ICONS_IDENT[aDialogIcon] <> nil) and not (tdfDoNotUseDefaultTitle in aFlags) then
-    Title := LoadResString(TD_ICONS_IDENT[aDialogIcon]);
+  if (Title = '') and (TD_ICONS_IDENT[ADialogIcon] <> nil) and not (tdfDoNotUseDefaultTitle in AFlags) then
+    Title := LoadResString(TD_ICONS_IDENT[ADialogIcon]);
 
   MainText := StringReplace(MainText, 'Error: ', '', [rfIgnoreCase]);
   LvVerifierCheckBox := nil;
   LvComboBox := nil;
   LvEditBox := nil;
-  FFlags := aFlags; // Just for external use.
+  FFlags := AFlags; // Just for external use.
   I:= 0;
   XB:= 0;
   LvLastLeftPosition:= 0;
@@ -669,7 +716,7 @@ begin
 {$REGION ' Create TaskDialog Form and initialize form properties'}
   FDialogForm := TTaskDialogForm(TForm.CreateParented(Application.DialogHandle));
   try
-    if (tdfCanBeMinimized in aFlags) then
+    if (tdfCanBeMinimized in AFlags) then
     begin
       FDialogForm.BorderStyle := bsSizeable;
       FDialogForm.BorderIcons := [biMinimize];
@@ -681,19 +728,26 @@ begin
       FDialogForm.BorderIcons := [];
       FDialogForm.Constraints.MinHeight := 150;
     end;
-    if (tdfPositionRelativeToWindow in aFlags) then
+
+    if tdfRtlLayout in FFlags then
+      FDialogForm.BiDiMode := bdRightToLeft
+    else
+      FDialogForm.BiDiMode := bdLeftToRight;
+
+    if (tdfPositionRelativeToWindow in AFlags) then
       FDialogForm.Position := poOwnerFormCenter;
+
     FDialogForm.Font := DefaultFont;
     LvFontHeight := DefaultFont.Height;
-    if aWidth = 0 then
+    if AWidth = 0 then
     begin
-      aWidth := FDialogForm.Canvas.TextWidth(Title);
-      if (aWidth > 300) or (FDialogForm.Canvas.TextWidth(MainText) > 300) {or ( (Length(CommandLinkButtons)) > 0 and (length(CommandLinkButtons[0].TitleCaption) > 40))} then
-        aWidth := 480
+      AWidth := FDialogForm.Canvas.TextWidth(Title);
+      if (AWidth > 300) or (FDialogForm.Canvas.TextWidth(MainText) > 300) then
+        AWidth := 480
       else
-        aWidth := 420;
+        AWidth := 420;
     end;
-    FDialogForm.ClientWidth := aWidth;
+    FDialogForm.ClientWidth := AWidth;
     FDialogForm.Height := 130;
     FDialogForm.Caption := DialogCaption;
     FDialogForm.OnShow := FDialogForm.FormShow;
@@ -707,13 +761,14 @@ begin
       FTopPanel.Color := clWhite
     else
       FTopPanel.Color := TStyleManager.ActiveStyle.GetSystemColor(FDialogForm.Color);
+
     FTopPanel.BorderInner := fsNone;
     FTopPanel.BorderOuter := fsNone;
     FTopPanel.Name := 'TopPanel';
     LvTopPanelHeight := FTopPanel.Height;
-    FTopPanel.Transparent := False;
+    FTopPanel.Transparent := True;
     FTopPanel.StyleElements := [seFont];
-    
+
     FMiddlePanel := TRzPanel.Create(FDialogForm);
     FMiddlePanel.Parent := FDialogForm;
     FMiddlePanel.Align := alClient;
@@ -723,7 +778,8 @@ begin
     FMiddlePanel.Name := 'MiddlePanel';
     LvMiddlePanelHeight := 34;
     
-    if (FooterText.Trim <> '') or ((tdfExpandFooterArea in FFlags) and (ExpandableText.Trim <> '')) then begin
+    if (FooterText.Trim <> '') or ((tdfExpandFooterArea in FFlags) and (ExpandableText.Trim <> '')) then
+    begin
       BottomPanel := TRzPanel.Create(FDialogForm);
       BottomPanel.Parent := FDialogForm;
       BottomPanel.Align := alBottom;
@@ -733,14 +789,14 @@ begin
       BottomPanel.ParentBackground := True;
       BottomPanel.Visible := True;
       BottomPanel.Name := 'BottomPanel';
-      BottomPanel.Height := 35;
+      BottomPanel.Height := 30;
       LvBottomPanelHeight := BottomPanel.Height;
     end;
 {$REGION ' Handle main Dialog icon'}    //
-    if (WIN_ICONS[aDialogIcon] <> nil) and not (tdfRemoveMainIcon in aFlags) then  begin
+    if (WIN_ICONS[ADialogIcon] <> nil) and not (tdfRemoveMainIcon in AFlags) then  begin
       LvTempImage := TImage.Create(FDialogForm);
       LvTempImage.Parent := FTopPanel;
-      LvTempImage.Picture.Icon.Handle := LoadIcon(0, WIN_ICONS[aDialogIcon]);
+      LvTempImage.Picture.Icon.Handle := LoadIcon(0, WIN_ICONS[ADialogIcon]);
       LvTempImage.SetBounds(16, 16, LvTempImage.Picture.Icon.Width, LvTempImage.Picture.Icon.Height);
       LvLastLeftPosition := LvTempImage.Width + 48;
       LvLastTopPosition := LvTempImage.Top;
@@ -758,20 +814,20 @@ begin
     if not MainText.IsEmpty then
       AddLabel(MainText, False, False, FTopPanel, 'MiainTextLabel');
 
-    if (ExpandableText <> '') and not (tdfExpandFooterArea in aFlags) then
+    if (ExpandableText <> '') and not (tdfExpandFooterArea in AFlags) then
       AddLabel(ExpandableText, False, False, FTopPanel, 'ExpandLabel');
 {$ENDREGION}
 {$REGION ' Add command links buttons'}
     AddCommandLinkbuttons;
 {$ENDREGION}
 {$REGION ' Add Radio buttons'}
-    if RadioButtonsText <> '' then
+    if RadioButtonsItems <> '' then
     begin
       with TStringList.Create do
       try
         Delimiter := '|';
         StrictDelimiter := True;
-        DelimitedText := Trim(RadioButtonsText);
+        DelimitedText := Trim(RadioButtonsItems);
         SetLength(LvRadioButtons,Count);
         for I := 0 to Count-1 do
         begin
@@ -779,7 +835,7 @@ begin
           with LvRadioButtons[I] do
           begin
             Parent := FTopPanel;
-            SetBounds(LvLastLeftPosition + 16, LvLastTopPosition, aWidth - 32 - LvLastLeftPosition, 6 - LvFontHeight);
+            SetBounds(LvLastLeftPosition + 16, LvLastTopPosition, AWidth - 32 - LvLastLeftPosition, 6 - LvFontHeight);
             Caption := NoCR(Strings[I], FTempHint);
             if FTempHint <> '' then
             begin
@@ -788,7 +844,7 @@ begin
             end;
             inc(LvLastTopPosition, Height);
             Tag := I + 200;
-            if (I = 0) or (Tag = aDefaultRadio) then
+            if (I = 0) or (Tag = ADefaultRadio) then
               Checked := True;
             Transparent := True;
           end;
@@ -800,15 +856,16 @@ begin
     end;
 {$ENDREGION}
 {$REGION ' Add ComboBox Or EditBox'}
-    if ComboBoxItems <> '' then begin
+    if ComboBoxItems <> '' then
+    begin
       LvTempList := TStringList.Create;
       try
         LvTempList.Delimiter := '|';
         LvTempList.StrictDelimiter := True;
         LvComboBox := TComboBox.Create(FDialogForm);
         LvComboBox.Parent := FTopPanel;
-        LvComboBox.SetBounds(LvLastLeftPosition, LvLastTopPosition, aWidth - 32 - LvLastLeftPosition, 22);
-        if tdfUserInputeTextBox in aFlags then
+        LvComboBox.SetBounds(LvLastLeftPosition, LvLastTopPosition, AWidth - 32 - LvLastLeftPosition, 22);
+        if tdfComboEditable in AFlags then
           LvComboBox.Style := csDropDown
         else
           LvComboBox.Style := csDropDownList;
@@ -819,10 +876,12 @@ begin
       finally
         LvTempList.Free;
       end;
-    end else if tdfUserInputeTextBox in aFlags then begin
+    end
+    else if tdfUserInputeTextBox in AFlags then
+    begin
       LvEditBox := TRzEdit.Create(FDialogForm);
       LvEditBox.Parent := FTopPanel;
-      LvEditBox.SetBounds(LvLastLeftPosition, LvLastTopPosition, aWidth - 16 - LvLastLeftPosition, 22);
+      LvEditBox.SetBounds(LvLastLeftPosition, LvLastTopPosition, AWidth - 16 - LvLastLeftPosition, 22);
       LvEditBox.Text := UserInputedText;
       inc(LvLastTopPosition, 42);
     end;
@@ -832,17 +891,17 @@ begin
     FTopPanel.Height := LvTopPanelHeight;
     FDialogForm.ClientHeight := LvTopPanelHeight + LvMiddlePanelHeight + LvBottomPanelHeight ;
 {$REGION ' Add buttons and verification checkbox'}
-    if (Byte(aCommonButtons) <> 0) or (VerifyText <> '') or  ((Length(CommandLinkButtons) > 0) and not (tdfUseCommandLinks in aFlags)) then
+    if (Byte(ACommonButtons) <> 0) or (VerifyText <> '') or  ((Length(CommandLinkButtons) > 0) and not (tdfUseCommandLinks in AFlags)) then
     begin
-      XB := aWidth;
-      if not (tdfUseCommandLinks in aFlags) and (Length(CommandLinkButtons) > 0) then // if CommandLinks Buttons doesn't created before this line we create theme as standard buttons.
+      XB := AWidth;
+      if not (tdfUseCommandLinks in AFlags) and (Length(CommandLinkButtons) > 0) then // if CommandLinks Buttons doesn't created before this line we create theme as standard buttons.
       begin
         for I := High(CommandLinkButtons) downto Low(CommandLinkButtons) do
           AddButton(CommandLinkButtons[I].TitleCaption, I + 101, FMiddlePanel);
       end;
 
       for LvCButton := high(LvCButton) downto low(LvCButton) do
-        if LvCButton in aCommonButtons then
+        if LvCButton in ACommonButtons then
           AddButton(LoadResString(TD_BTNS[LvCButton]), TD_BTNMOD[LvCButton], FMiddlePanel);
 
       if VerifyText <> '' then
@@ -854,7 +913,7 @@ begin
           if LvLastLeftPosition + 16 + FDialogForm.Canvas.TextWidth(VerifyText) > XB then
           begin
             inc(LvLastTopPosition,32);
-            XB := aWidth;
+            XB := AWidth;
           end;
           SetBounds(LvLastLeftPosition, LvLastTopPosition, XB - LvLastLeftPosition, 24);
           Caption := VerifyText;
@@ -865,12 +924,12 @@ begin
       XB := 0;     
 {$ENDREGION}
 {$REGION ' Add ProgressBar'}
-    if tdfShowProgressBar in aFlags then
+    if tdfShowProgressBar in AFlags then
     begin
       LvProgressBar := TProgressBar.Create(FMiddlePanel);
       LvProgressBar.Parent := FMiddlePanel;
 
-      if not (tdfShowMarqueeProgressBar in aFlags) then
+      if not (tdfShowMarqueeProgressBar in AFlags) then
         LvProgressBar.Style := pbstNormal
       else
         LvProgressBar.Style := pbstMarquee;
@@ -879,13 +938,13 @@ begin
       if LvLastLeftPosition + 16 + FDialogForm.Canvas.TextWidth(VerifyText) > XB then
       begin
         inc(LvLastTopPosition, 32);
-        XB := aWidth;
+        XB := AWidth;
       end;
       LvProgressBar.SetBounds(LvLastLeftPosition, LvLastTopPosition - 28, XB - LvLastLeftPosition - 10, 17);
     end;
 {$ENDREGION}
 {$REGION ' Add ExpandButton'}
-    if (ExpandableText.Trim <> '') and (tdfExpandFooterArea in aFlags) then
+    if (ExpandableText.Trim <> '') and (tdfExpandFooterArea in AFlags) then
     begin
       LvExpandButton := TSpeedButton.Create(FMiddlePanel);
       LvExpandButton.Parent := FMiddlePanel;
@@ -917,7 +976,7 @@ begin
         BottomPanel.Height := Max(35, (BottomPanel.Height - TRzPanel(FDialogForm.FindComponent('AlignedExpandPanel')).Height));
     end;
 
-    if tdfRemoveCommonButtons in aFlags then
+    if tdfRemoveCommonButtons in AFlags then
     begin
       if FDialogForm.FindComponent('MiddlePanel') <> nil then
       begin
@@ -938,7 +997,7 @@ begin
       FMiddlePanel.BorderOuter := fsNone;
       FDialogForm.ClientHeight := LvTopPanelHeight + LvMiddlePanelHeight  + LvSurfaceOptimizer;
     end;
-    if (tdfExpandByDefault in aFlags) then
+    if (tdfExpandByDefault in AFlags) then
       LvExpandButton.Click;
     FDialogForm.FormStyle := fsNormal;
     FDialogForm.ShowModal;
@@ -947,6 +1006,7 @@ begin
     Result := FDialogForm.Tag;
     if Result >= $10000 then
       Result := 0;
+
     if LvComboBox <> nil then
     begin
       ComboBoxSelectionResultIndex := LvComboBox.ItemIndex;
@@ -968,9 +1028,9 @@ begin
   end;
 end;
 
-function TAxTaskDialog.GetFooterIconName(aFooterIcon: TAxTaskDialogFooterIcon): string;
+function TAxTaskDialog.GetFooterIconName(AFooterIcon: TAxTaskDialogFooterIcon): string;
 begin
-  case aFooterIcon of
+  case AFooterIcon of
     tfiWarning: Result := 'WARNING';
     tfiQuestion: Result := 'QUESTION';
     tfiError: Result := 'ERROR';
@@ -979,25 +1039,25 @@ begin
   end;
 end;
 
-function TAxTaskDialog.NoCR(const aText: string;var aHint: string): string;
+function TAxTaskDialog.NoCR(const AText: string;var AHint: string): string;
 var
   I: Integer;
 begin
-  Result := aText;
-  aHint := '';
+  Result := AText;
+  AHint := '';
   I := pos('\n', Result);
   if I > 0 then
   begin
-    aHint := CR(copy(Result, I + 2, maxInt));
+    AHint := CR(copy(Result, I + 2, maxInt));
     SetLength(Result, I - 1);
   end;
 end;
 
-class function TAxTaskDialog.UnAmp(const aTempStr: string): string;
+class function TAxTaskDialog.UnAmp(const ATempStr: string): string;
 var
   I: Integer;
 begin
-  Result := aTempStr;
+  Result := ATempStr;
   repeat
     I := pos('&',Result);
     if I = 0 then
@@ -1007,11 +1067,11 @@ begin
 end;
 
 { TUrlLabelHandler }
-constructor TUrlLabelHandler.Create(aLabel: TRzLabel; const aURL: string);
+constructor TUrlLabelHandler.Create(ALabel: TRzLabel; const AURL: string);
 begin
-  inherited Create(aLabel);
-  FLbl := aLabel;
-  FUrl := aURL;
+  inherited Create(ALabel);
+  FLbl := ALabel;
+  FUrl := AURL;
   FLbl.OnClick := UrlOnClick;
   FLbl.Font.Style := FLbl.Font.Style + [fsUnderline];
   FLbl.Font.Color := clBlue;
@@ -1045,7 +1105,7 @@ begin
   end;
 end;
 
-procedure TExposedPanel.ClearFrameOnPanel(aPanel: TExposedPanel);
+procedure TExposedPanel.ClearFrameOnPanel(APanel: TExposedPanel);
 var
   LvColor: TColor;
   LvRect : TRect;
@@ -1055,8 +1115,9 @@ begin
   except
     LvColor := -16777201
   end;
-  LvRect := Rect(0, 0, aPanel.Width ,aPanel.Height);
-  with TExposedPanel(aPanel).Canvas do
+
+  LvRect := Rect(0, 0, APanel.Width ,APanel.Height);
+  with TExposedPanel(APanel).Canvas do
   begin
     Brush.Color := LvColor;
     Brush.Style := bsSolid;
@@ -1064,11 +1125,11 @@ begin
   end;
 end;
 
-constructor TExposedPanel.Create(aOwner: TComponent; aTitleCaption: string; aDetailCaption: string; aHint: string);
+constructor TExposedPanel.Create(AOwner: TComponent; ATitleCaption: string; ADetailCaption: string; AHint: string);
 var
   LvLabelTitle, LvLabelDetail: TRzLabel;
 begin
-  inherited Create(aOwner);
+  inherited Create(AOwner);
   Height := 50;
   OnMouseDown := PanelMouseDown;
   OnMouseUp := PanelMouseUp;
@@ -1087,7 +1148,7 @@ begin
     Margins.Top := 0;
     Margins.Right := 0;
     AutoSize := True;
-    Caption := aTitleCaption;
+    Caption := ATitleCaption;
     Font.Name := 'Tahoma';
     Font.Size := 11;
     Font.Color := clNavy;
@@ -1101,14 +1162,14 @@ begin
     OnMouseLeave := Self.PanelMouseLeave;
     OnClick := LabelOnClick;
     Self.Height := max(Self.Height,Height);
-    if not aHint.IsEmpty then
+    if not AHint.IsEmpty then
     begin
-      Hint := aHint;
+      Hint := AHint;
       ShowHint := True;
     end;
   end;
 
-  if not aDetailCaption.IsEmpty then
+  if not ADetailCaption.IsEmpty then
   begin
     LvLabelDetail := TRzLabel.Create(Self.Parent);
     with LvLabelDetail do
@@ -1122,7 +1183,7 @@ begin
       Margins.Bottom := 0;
       Margins.Right := 0;
       AutoSize := True;
-      Caption := aDetailCaption;
+      Caption := ADetailCaption;
       Font.Name := 'Tahoma';
       Font.Size := 10;
       Font.Color := clNavy;
@@ -1138,9 +1199,9 @@ begin
       if Self.Height < Height then
         Self.Height := Self.Height + (Height - Self.Height);
 
-      if not aHint.IsEmpty then
+      if not AHint.IsEmpty then
       begin
-        Hint := aHint;
+        Hint := AHint;
         ShowHint := True;
       end;
     end;
@@ -1148,20 +1209,20 @@ begin
   else LvLabelTitle.Align := alClient;
 end;
 
-procedure TExposedPanel.DrawFrameOnPanel(aPanel: TExposedPanel; aColor: TColor; aStyle: TBrushStyle);
+procedure TExposedPanel.DrawFrameOnPanel(APanel: TExposedPanel; AColor: TColor; AStyle: TBrushStyle);
 var
   LvRect : TRect;
 begin
   if TStyleManager.ActiveStyle.Name = 'Windows' then
-    aPanel.Color := clWhite
+    APanel.Color := clWhite
   else
-    aPanel.Color := TStyleManager.ActiveStyle.GetSystemColor(Screen.ActiveForm.Color);
-  LvRect := Rect(0, 0, aPanel.Width , aPanel.Height);
-  with TExposedPanel(aPanel).Canvas do
+    APanel.Color := TStyleManager.ActiveStyle.GetSystemColor(Screen.ActiveForm.Color);
+  LvRect := Rect(0, 0, APanel.Width , APanel.Height);
+  with TExposedPanel(APanel).Canvas do
   begin
     Pen.Width := 2;
-    Brush.Color := aColor;
-    Brush.Style := aStyle;
+    Brush.Color := AColor;
+    Brush.Style := AStyle;
     FrameRect(LvRect);
   end;
 end;
@@ -1222,11 +1283,11 @@ begin
   end;
 end;
 
-procedure TExposedPanel.SetBitmap(aBmp: TBitmap);
+procedure TExposedPanel.SetBitmap(ABitmap: TBitmap);
 var
   LvTempImage : TImage;
 begin
-  if aBmp <> nil then
+  if ABitmap <> nil then
   begin
     LvTempImage := TImage.Create(Self);
     LvTempImage.Parent := Self;

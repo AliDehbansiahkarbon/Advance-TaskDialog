@@ -12,6 +12,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  TStyleManager.TrySetStyle('Smokey Quartz Kamri');
   Application.CreateForm(TForm1, Form1);
   ReportMemoryLeaksOnShutdown := True;
   Application.Run;
