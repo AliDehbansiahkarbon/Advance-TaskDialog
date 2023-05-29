@@ -19,7 +19,7 @@ You need to have the Konopka Signature VCL Controls (formerly Raize Components) 
 The Konopka Components can be downloaded and installed via GetIt, although it is possible that they are only included in the latest version but probably not in the Starter Edition, The free Bonus Pack is only available to licensed owners of the following products: RAD Studio, Delphi or C++Builder 10.1 Berlin( or higher) Professional, Enterprise and Architect editions.
 
 
-## Screenshots
+## Screenshots (Left to right)
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/f70a1adb-ace7-4018-8def-21ed79f3a1a3)
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/7160b9d7-1b7d-47d4-b84f-f6053b9ddb04)
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/4606cf3a-8cd3-4220-aa23-1b828dd503d4)
@@ -31,3 +31,15 @@ The Konopka Components can be downloaded and installed via GetIt, although it is
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/3a0a8487-1dc9-46c3-9df3-264796c29755)
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/15ac8bb3-8184-4994-b923-0720ab474d1f)
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/b15e977f-4544-433a-97c0-d2bb86503845)
+
+## Screenshots (Right to left)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/f2e42f51-f909-4c23-b92c-51af311742c7)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/1ed1b7d6-72d7-488d-9891-8c2c52b06ce9)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/47486944-dd67-44b1-929d-092d9c609542)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/7a373d1d-86c7-4999-bb42-2e59c34d4ea2)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/f26b01a6-f9a5-426d-9f76-5e55d90459c2)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/b1a781a7-53d9-4e95-97e4-59e1a2779740)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/fa45561e-f2b7-4b9a-b6b0-b53b9cb324c1)
+![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/09f70d59-dc60-4fe5-8099-2bbb7b6113ec)
+
+
