@@ -43,3 +43,10 @@ The Konopka Components can be downloaded and installed via GetIt, although it is
 ![image](https://github.com/AliDehbansiahkarbon/Advance-TaskDialog/assets/5601608/09f70d59-dc60-4fe5-8099-2bbb7b6113ec)
 
 
+<hr>
+<p align="center">
+<img src="https://dtffvb2501i0o.cloudfront.net/images/logos/delphi-logo-128.webp" alt="Delphi">
+</p>
+<h5 align="center">
+Made with :heart: on Delphi
+</h5>
